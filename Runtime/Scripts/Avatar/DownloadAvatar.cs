@@ -19,11 +19,15 @@ namespace Avaturn
         [SerializeField] private string _startUrl;
 
         private const string AvaturnStartUrlKey = "AvaturnStartUrl";
+        private const string AvaturnDownloadOnStartKey = "HasAvaturnDownloadOnStart";
 
         private void Start()
         {
-            // Load the saved URL from PlayerPrefs
+            // Load values from PlayerPrefs
+            _downloadOnStart = PlayerPrefs.GetInt(AvaturnDownloadOnStartKey, 0) == 1;
             _startUrl = PlayerPrefs.GetString(AvaturnStartUrlKey, _startUrl);
+
+            Debug.Log($"Loaded downloadOnStart: {_downloadOnStart}, startUrl: {_startUrl}");
 
             if (_downloadOnStart && !string.IsNullOrEmpty(_startUrl))
             {
@@ -50,14 +54,18 @@ namespace Avaturn
             {
                 _events.OnSuccess?.Invoke(transform);
 
-                // Save the URL to PlayerPrefs
+                // Save the URL to PlayerPrefs only after successful download
                 PlayerPrefs.SetString(AvaturnStartUrlKey, url);
-                PlayerPrefs.Save();
+                PlayerPrefs.SetInt(AvaturnDownloadOnStartKey, 1); // Set download on start to true
+                PlayerPrefs.Save(); // Force save to disk
+
                 Debug.Log($"URL saved: {url}");
             }
             else
             {
                 Debug.LogError($"Fail to download");
+                PlayerPrefs.SetInt(AvaturnDownloadOnStartKey, 0); // Reset download on start if failed
+                PlayerPrefs.Save();
             }
         }
 
