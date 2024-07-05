@@ -18,10 +18,17 @@ namespace Avaturn
         [SerializeField] private bool _downloadOnStart;
         [SerializeField] private string _startUrl;
 
+        private const string AvaturnStartUrlKey = "AvaturnStartUrl";
+
         private void Start()
         {
-            if(_downloadOnStart)
+            // Load the saved URL from PlayerPrefs
+            _startUrl = PlayerPrefs.GetString(AvaturnStartUrlKey, _startUrl);
+
+            if (_downloadOnStart && !string.IsNullOrEmpty(_startUrl))
+            {
                 Download(_startUrl);
+            }
         }
 
         public async void Download(string url)
@@ -32,23 +39,30 @@ namespace Avaturn
                 return;
             }
             Debug.Log($"Jesus: Start download...\nUrl = {url}");
-        
+
             // Loading via GltFast loader
             var asset = GetComponent<GltfAsset>();
             asset.ClearScenes();
             var success = await asset.Load(url, new AvaturnDownloadProvider());
+
             // Optional for animations
             if (success)
             {
                 _events.OnSuccess?.Invoke(transform);
+
+                // Save the URL to PlayerPrefs
+                PlayerPrefs.SetString(AvaturnStartUrlKey, url);
+                PlayerPrefs.Save();
+                Debug.Log($"URL saved: {url}");
             }
             else
             {
                 Debug.LogError($"Fail to download");
             }
         }
-    
-        public async  Task<IDownload> Request(Uri url) {
+
+        public async Task<IDownload> Request(Uri url)
+        {
             var req = new AvaturnAwaitableDownload(url);
             await req.WaitAsync();
             return req;
